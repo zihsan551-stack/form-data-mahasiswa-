@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Form Data Mahasiswa</title>
+    <style>
+        /* Pengaturan Dasar Tampilan */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        form {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+        input[type="text"], 
+        input[type="password"], 
+        textarea, 
+        select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Memastikan padding tidak merusak lebar */
+        }
+        button {
+            padding: 10px 20px;
+            margin-right: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .submit { background: green; color: white; }
+        .reset { background: orange; color: white; }
+
+        /* Pengaturan Tabel */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #eee;
+        }
+        img {
+            cursor: pointer;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Form Data Mahasiswa</h2>
+
+<form id="formMahasiswa">
+    <label>NIM</label>
+    <input type="text" id="nim" required>
+
+    <label>Nama</label>
+    <input type="text" id="nama" required>
+
+    <label>Alamat</label>
+    <textarea id="alamat"></textarea>
+
+    <label>Jenis Kelamin</label><br>
+    <input type="radio" name="jk" value="Pria"> Pria
+    <input type="radio" name="jk" value="Wanita"> Wanita
+    <input type="radio" name="jk" value="Lainnya"> Lainnya
+    <br><br>
+
+    <label>Tanggal Lahir</label>
+    <div style="display: flex; gap: 10px;">
+        <select id="tanggal"></select>
+        <select id="bulan">
+            <option value="01">Januari</option>
+            <option value="02">Februari</option>
+            <option value="03">Maret</option>
+            <option value="04">April</option>
+            <option value="05">Mei</option>
+            <option value="06">Juni</option>
+            <option value="07">Juli</option>
+            <option value="08">Agustus</option>
+            <option value="09">September</option>
+            <option value="10">Oktober</option>
+            <option value="11">November</option>
+            <option value="12">Desember</option>
+        </select>
+        <select id="tahun"></select>
+    </div>
+
+    <label>Password</label>
+    <input type="password" id="password">
+
+    <button type="submit" class="submit">Submit</button>
+    <button type="reset" class="reset">Reset</button>
+</form>
+
+<h2>Data Mahasiswa</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>NIM</th>
+            <th>Nama</th>
+            <th>Alamat</th>
+            <th>JK</th>
+            <th>TTL</th>
+            <th>Password</th>
+            <th>Aksi</th>
+        </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+</table>
+
+<script>
+    const form = document.getElementById("formMahasiswa");
+    const tableBody = document.getElementById("tableBody");
+
+    // Mengisi dropdown tanggal (1-31)
+    for (let i = 1; i <= 31; i++) {
+        document.getElementById("tanggal").innerHTML += `<option value="${i}">${i}</option>`;
+    }
+
+    // Mengisi dropdown tahun (1990-2025)
+    for (let i = 1990; i <= 2025; i++) {
+        document.getElementById("tahun").innerHTML += `<option value="${i}">${i}</option>`;
+    }
+
+    // Fungsi Submit Form
+    form.addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        const nim = document.getElementById("nim").value;
+        const nama = document.getElementById("nama").value;
+        const alamat = document.getElementById("alamat").value;
+        const jk = document.querySelector('input[name="jk"]:checked')?.value || "-";
+
+        const tanggal = document.getElementById("tanggal").value;
+        const bulan = document.getElementById("bulan").value;
+        const tahun = document.getElementById("tahun").value;
+
+        const ttl = `${tanggal}-${bulan}-${tahun}`;
+        const password = document.getElementById("password").value;
+
+        const row = document.createElement("tr");
+
+        // Memasukkan data ke baris tabel[cite: 1]
+        row.innerHTML = `
+            <td>${nim}</td>
+            <td>${nama}</td>
+            <td>${alamat}</td>
+            <td>${jk}</td>
+            <td>${ttl}</td>
+            <td>${password}</td>
+            <td>
+                <a href="#" onclick="editRow(this); return false;">
+                    <img src="edit.png" width="20" alt="Edit">
+                </a>
+                <a href="#" onclick="deleteRow(this); return false;">
+                    <img src="trash.png" width="20" alt="Hapus">
+                </a>
+            </td>
+        `;
+
+        tableBody.appendChild(row);
+        form.reset();
+    });
+
+    // Fungsi Hapus Baris[cite: 1]
+    function deleteRow(el) {
+        if(confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+            el.parentElement.parentElement.remove();
+        }
+    }
+
+    // Fungsi Edit Baris[cite: 1]
+    function editRow(el) {
+        const row = el.parentElement.parentElement;
+        const cells = row.children;
+
+        // Memasukkan kembali data dari tabel ke form untuk diedit[cite: 1]
+        document.getElementById("nim").value = cells[0].innerText;
+        document.getElementById("nama").value = cells[1].innerText;
+        document.getElementById("alamat").value = cells[2].innerText;
+        document.getElementById("password").value = cells[5].innerText;
+
+        // Menghapus baris lama agar bisa diganti dengan hasil edit saat submit ulang[cite: 1]
+        row.remove();
+    }
+</script>
+
+</body>
+</html>
