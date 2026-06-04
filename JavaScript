@@ -1,0 +1,180 @@
+// Sinkronisasi data dasar berkas dari kodemu
+let data = JSON.parse(localStorage.getItem("mahasiswa")) || [];
+let page = 1;
+const limit = 3; // Pembatasan jumlah baris data per halaman bawaan kodemu
+
+const tbody = document.getElementById("tbody");
+const pagination = document.getElementById("pagination");
+
+function render(){
+    // Update Statistik Atas secara Real-Time
+    document.getElementById("mTotal").innerText = data.length;
+    document.getElementById("mMale").innerText = data.filter(d => d.jk === 'L').length;
+    document.getElementById("mFemale").innerText = data.filter(d => d.jk === 'P').length;
+
+    const q = document.getElementById("search").value.toLowerCase();
+    const targetJk = document.getElementById("filterJk").value;
+    const order = document.getElementById("sortOrder").value;
+
+    // Gabungan Filter: Pencarian + Filter Jenis Kelamin
+    let filtered = data.filter(d => {
+        const matchSearch = d.nim.includes(q) || d.nama.toLowerCase().includes(q);
+        const matchJk = targetJk === "" || d.jk === targetJk;
+        return matchSearch && matchJk;
+    });
+
+    // Fitur Pengurutan Berkas (Sorting)
+    if (order === 'asc') {
+        filtered.sort((a, b) => a.nama.localeCompare(b.nama));
+    } else if (order === 'desc') {
+        filtered.sort((a, b) => b.nama.localeCompare(a.nama));
+    }
+
+    const totalPage = Math.ceil(filtered.length / limit) || 1;
+    if (page > totalPage) page = totalPage; // Proteksi pemindahan halaman pasca hapus data
+    
+    const start = (page-1)*limit;
+    const rows = filtered.slice(start, start+limit);
+
+    tbody.innerHTML = "";
+    if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-body); padding: 20px;">Tidak ada kecocokan data mahasiswa.</td></tr>`;
+    }
+
+    rows.forEach((m, i) => {
+        tbody.innerHTML += `
+        <tr>
+            <td style="font-weight: 600;">${start+i+1}</td>
+            <td style="font-family: monospace;">${m.nim}</td>
+            <td><strong>${m.nama}</strong></td>
+            <td>${m.alamat}</td>
+            <td><span class="gender-badge ${m.jk=='L'?'badge-l':'badge-p'}">
+                ${m.jk=='L'?'Laki-laki':'Perempuan'}
+            </span></td>
+            <td>
+                <div class="action-links">
+                    <a href="#" onclick="edit(${m.id})">Ubah</a>
+                    <a href="#" class="delete-btn" onclick="hapus(${m.id})">Hapus</a>
+                </div>
+            </td>
+        </tr>`;
+    });
+
+    pagination.innerHTML = "";
+    for(let i=1; i<=totalPage; i++){
+        pagination.innerHTML += `
+        <button class="${i==page?'active':''}" onclick="page=${i};render()">${i}</button>
+        `;
+    }
+}
+
+function edit(id){
+    const m = data.find(d=>d.id===id);
+    document.getElementById("nim").value = m.nim;
+    document.getElementById("nim").disabled = true; // Kunci NIM saat edit agar tidak memicu duplikasi data
+    document.getElementById("nama").value = m.nama;
+    document.getElementById("alamat").value = m.alamat;
+    document.getElementById("jk").value = m.jk;
+    document.getElementById("editId").value = id;
+
+    // Perubahan Visual Form Konten
+    document.getElementById("formTitle").innerText = "Ubah Data Mahasiswa";
+    document.getElementById("submitBtn").innerText = "Terapkan Koreksi";
+    document.getElementById("cancelBtn").style.display = "block";
+}
+
+function hapus(id){
+    if(confirm("Hapus berkas permanen data mahasiswa ini dari memori lokal?")){
+        data = data.filter(d=>d.id!==id);
+        localStorage.setItem("mahasiswa", JSON.stringify(data));
+        render();
+    }
+}
+
+function resetFormState() {
+    document.getElementById("form").reset();
+    document.getElementById("editId").value = "";
+    document.getElementById("nim").disabled = false;
+    
+    document.getElementById("formTitle").innerText = "Tambah Mahasiswa";
+    document.getElementById("submitBtn").innerText = "Simpan Data";
+    document.getElementById("cancelBtn").style.display = "none";
+    
+    ["eNim","eNama","eAlamat","eJk","ePassword"].forEach(i=>document.getElementById(i).innerText="");
+}
+
+form.onsubmit = e => {
+    e.preventDefault();
+
+    let valid = true;
+    ["eNim","eNama","eAlamat","eJk","ePassword"].forEach(i=>document.getElementById(i).innerText="");
+
+    const currentNim = document.getElementById("nim").value.trim();
+    const currentEditId = document.getElementById("editId").value;
+
+    // Validasi Kolom Kosong dari Logika Bawaan Anda
+    if(!currentNim){ eNim.innerText="NIM wajib diisi"; valid=false }
+    if(!nama.value){ eNama.innerText="Nama wajib diisi"; valid=false }
+    if(!alamat.value){ eAlamat.innerText="Alamat wajib diisi"; valid=false }
+    if(!jk.value){ eJk.innerText="Silakan pilih jenis kelamin"; valid=false }
+
+    if(!currentEditId && !password.value){
+        ePassword.innerText="Kata sandi wajib dibuat";
+        valid=false;
+    }
+
+    // Penambahan Proteksi: Cek duplikasi NIM saat mode penambahan data baru
+    if(!currentEditId && data.some(d => d.nim === currentNim)) {
+        eNim.innerText = "NIM ini sudah terdaftar!";
+        valid = false;
+    }
+
+    if(!valid) return;
+
+    if(currentEditId){
+        const m = data.find(d=>d.id == currentEditId);
+        Object.assign(m,{
+            nim: currentNim, nama: nama.value, alamat: alamat.value, jk: jk.value
+        });
+    }else{
+        data.push({
+            id: Date.now(),
+            nim: currentNim,
+            nama: nama.value,
+            alamat: alamat.value,
+            jk: jk.value,
+            password: password.value
+        });
+    }
+
+    localStorage.setItem("mahasiswa", JSON.stringify(data));
+    resetFormState();
+    render();
+};
+
+search.oninput = ()=>{ page=1; render(); };
+
+// LOGIKA SAKLAR MANAGEMENT TEMA (DENGAN PERBEDAAN IKON)
+function toggleTheme() {
+    const activeTheme = document.documentElement.getAttribute('data-theme');
+    applyTheme(activeTheme === 'dark' ? 'light' : 'dark');
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    
+    // Ambil elemen span ikon
+    const themeIcon = document.getElementById("themeIcon");
+    
+    // Kondisional penggantian ikon berdasarkan tema aktif
+    if (theme === 'dark') {
+        themeIcon.innerText = "🌙"; // Ikon Bulan untuk Mode Gelap
+    } else {
+        themeIcon.innerText = "☀️"; // Ikon Matahari untuk Mode Terang
+    }
+}
+
+// Inisialisasi Sistem Awal
+applyTheme(localStorage.getItem('theme') || 'light');
+render();
