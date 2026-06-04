@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Manajemen Mahasiswa </title>
+    <style>
+        :root {
+            --bg-main: #f0f2f5;
+            --bg-card: #ffffff;
+            --text-title: #1e293b;
+            --text-body: #475569;
+            --primary: #0284c7;
+            --primary-light: #e0f2fe;
+            --primary-hover: #0369a1;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --border: #cbd5e1;
+            --input-bg: #f8fafc;
+            --shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #090d16;
+            --bg-card: #111827;
+            --text-title: #f8fafc;
+            --text-body: #94a3b8;
+            --primary: #38bdf8;
+            --primary-light: #0c4a6e;
+            --primary-hover: #7dd3fc;
+            --border: #374151;
+            --input-bg: #1f2937;
+            --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-body);
+            min-height: 100vh;
+        }
+
+        /* LAYOUT UTAMA: SPLIT-SCREEN COOPERATIVE */
+        .layout-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            min-height: 100vh;
+        }
+
+        @media (min-width: 992px) {
+            .layout-container {
+                grid-template-columns: 360px 1fr;
+            }
+        }
+
+        /* SISI KIRI: STICKY FORM PANEL */
+        .sidebar-panel {
+            background-color: var(--bg-card);
+            border-right: 1px solid var(--border);
+            padding: 30px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        @media (min-width: 992px) {
+            .sidebar-panel {
+                position: sticky;
+                top: 0;
+                height: 100vh;
+                overflow-y: auto;
+            }
+        }
+
+        .brand-header h1 {
+            font-size: 1.35rem;
+            color: var(--text-title);
+            font-weight: 800;
+        }
+
+        .brand-header p {
+            font-size: 0.85rem;
+            color: var(--text-body);
+            margin-top: 4px;
+        }
+
+        .form-title {
+            font-size: 1.1rem;
+            color: var(--primary);
+            font-weight: 700;
+            margin-top: 10px;
+        }
+
+        .field-block {
+            margin-bottom: 12px;
+        }
+
+        .input-item {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            background-color: var(--input-bg);
+            color: var(--text-title);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .input-item:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.75rem;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .btn-full {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.95rem;
+            margin-top: 6px;
+        }
+
+        .btn-save { background-color: var(--primary); color: white; }
+        .btn-save:hover { background-color: var(--primary-hover); }
+        .btn-cancel { background-color: transparent; border: 1px solid var(--border); color: var(--text-body); }
+        .btn-cancel:hover { background-color: var(--input-bg); }
+
+        /* SISI KANAN: LIVE VIEW & METRICS */
+        .content-panel {
+            padding: 30px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .top-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .theme-toggle-btn {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            color: var(--text-title);
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+        }
+
+        /* Grid Statistik Gabungan */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .metric-card {
+            background-color: var(--bg-card);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .metric-card p { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-body); }
+        .metric-card h3 { font-size: 1.6rem; color: var(--text-title); margin-top: 2px; }
+
+        /* Search & Filter Hub */
+        .filter-control-hub {
+            background-color: var(--bg-card);
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        @media (min-width: 600px) {
+            .filter-control-hub {
+                grid-template-columns: 2fr 1fr 1fr;
+            }
+        }
+
+        /* Tabel Responsif & Badge */
+        .table-container {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: var(--bg-card);
+            color: var(--text-body);
+            font-weight: 700;
+            padding: 14px 16px;
+            border-bottom: 2px solid var(--border);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-title);
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background-color: var(--primary-light); }
+
+        .gender-badge {
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #fff;
+        }
+        .badge-l { background-color: #2563eb; }
+        .badge-p { background-color: #db2777; }
+
+        .action-links {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-links a {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            color: var(--primary);
+        }
+        .action-links a.delete-btn { color: var(--danger); }
+        .action-links a:hover { text-decoration: underline; }
+
+        /* Paginasi */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .pagination-container button {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-title);
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .pagination-container button.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout-container">
+    <aside class="sidebar-panel">
+        <div class="brand-header">
+            <h1>STITEK AKADEMIK</h1>
+            <p>Sistem Pengolahan Berkas Mahasiswa</p>
+        </div>
+        
+        <hr style="border: 0; border-top: 1px solid var(--border);">
+
+        <div class="form-wrapper">
+            <h2 class="form-title" id="formTitle">Tambah Mahasiswa</h2>
+            <form id="form">
+                <input type="hidden" id="editId">
+                
+                <div class="field-block">
+                    <input id="nim" class="input-item" placeholder="NIM Mahasiswa" autocomplete="off">
+                    <div class="error-message" id="eNim"></div>
+                </div>
+
+                <div class="field-block">
+                    <input id="nama" class="input-item" placeholder="Nama Lengkap" autocomplete="off">
+                    <div class="error-message" id="eNama"></div>
+                </div>
+
+                <div class="field-block">
+                    <input id="alamat" class="input-item" placeholder="Alamat Domisili" autocomplete="off">
+                    <div class="error-message" id="eAlamat"></div>
+                </div>
+
+                <div class="field-block">
+                    <select id="jk" class="input-item">
+                        <option value="">-- Pilih Jenis Kelamin --</option>
+                        <option value="L">Laki-laki</option>
+                        <option value="P">Perempuan</option>
+                    </select>
+                    <div class="error-message" id="eJk"></div>
+                </div>
+
+                <div class="field-block">
+                    <input type="password" id="password" class="input-item" placeholder="Kata Sandi Akun">
+                    <div class="error-message" id="ePassword"></div>
+                </div>
+
+                <button type="submit" class="btn-full btn-save" id="submitBtn">Simpan Data</button>
+                <button type="button" class="btn-full btn-cancel" id="cancelBtn" style="display: none;" onclick="resetFormState()">Batalkan Perubahan</button>
+            </form>
+        </div>
+    </aside>
+
+    <main class="content-panel">
+        <div class="top-toolbar">
+            <h2 style="color: var(--text-title); font-weight: 700; font-size: 1.2rem;">Dasbor Pemantauan</h2>
+            <button class="theme-toggle-btn" onclick="toggleTheme()">
+                <span id="themeIcon" style="margin-right: 6px;">☀️</span> 
+            </button>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card" style="border-left: 4px solid var(--primary);">
+                <p>Total Mahasiswa</p>
+                <h3 id="mTotal">0</h3>
+            </div>
+            <div class="metric-card" style="border-left: 4px solid #2563eb;">
+                <p>Laki-Laki (L)</p>
+                <h3 id="mMale">0</h3>
+            </div>
+            <div class="metric-card" style="border-left: 4px solid #db2777;">
+                <p>Perempuan (P)</p>
+                <h3 id="mFemale">0</h3>
+            </div>
+        </div>
+
+        <div class="filter-control-hub">
+            <input id="search" class="input-item" placeholder="Cari Berdasarkan NIM / Nama...">
+            
+            <select id="filterJk" class="input-item" onchange="page=1; render();">
+                <option value="">Semua Jenis Kelamin</option>
+                <option value="L">Hanya Laki-laki</option>
+                <option value="P">Hanya Perempuan</option>
+            </select>
+
+            <select id="sortOrder" class="input-item" onchange="render();">
+                <option value="none">Urutan Default</option>
+                <option value="asc">Nama (A - Z)</option>
+                <option value="desc">Nama (Z - A)</option>
+            </select>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">No</th>
+                        <th>NIM</th>
+                        <th>Nama Lengkap</th>
+                        <th>Alamat</th>
+                        <th>Gender</th>
+                        <th style="width: 120px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+
+        <div class="pagination-container" id="pagination"></div>
+    </main>
+</div>
+
+<script>
+// Sinkronisasi data dasar berkas dari kodemu
+let data = JSON.parse(localStorage.getItem("mahasiswa")) || [];
+let page = 1;
+const limit = 3; // Pembatasan jumlah baris data per halaman bawaan kodemu
+
+const tbody = document.getElementById("tbody");
+const pagination = document.getElementById("pagination");
+
+function render(){
+    // Update Statistik Atas secara Real-Time
+    document.getElementById("mTotal").innerText = data.length;
+    document.getElementById("mMale").innerText = data.filter(d => d.jk === 'L').length;
+    document.getElementById("mFemale").innerText = data.filter(d => d.jk === 'P').length;
+
+    const q = document.getElementById("search").value.toLowerCase();
+    const targetJk = document.getElementById("filterJk").value;
+    const order = document.getElementById("sortOrder").value;
+
+    // Gabungan Filter: Pencarian + Filter Jenis Kelamin
+    let filtered = data.filter(d => {
+        const matchSearch = d.nim.includes(q) || d.nama.toLowerCase().includes(q);
+        const matchJk = targetJk === "" || d.jk === targetJk;
+        return matchSearch && matchJk;
+    });
+
+    // Fitur Pengurutan Berkas (Sorting)
+    if (order === 'asc') {
+        filtered.sort((a, b) => a.nama.localeCompare(b.nama));
+    } else if (order === 'desc') {
+        filtered.sort((a, b) => b.nama.localeCompare(a.nama));
+    }
+
+    const totalPage = Math.ceil(filtered.length / limit) || 1;
+    if (page > totalPage) page = totalPage; // Proteksi pemindahan halaman pasca hapus data
+    
+    const start = (page-1)*limit;
+    const rows = filtered.slice(start, start+limit);
+
+    tbody.innerHTML = "";
+    if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-body); padding: 20px;">Tidak ada kecocokan data mahasiswa.</td></tr>`;
+    }
+
+    rows.forEach((m, i) => {
+        tbody.innerHTML += `
+        <tr>
+            <td style="font-weight: 600;">${start+i+1}</td>
+            <td style="font-family: monospace;">${m.nim}</td>
+            <td><strong>${m.nama}</strong></td>
+            <td>${m.alamat}</td>
+            <td><span class="gender-badge ${m.jk=='L'?'badge-l':'badge-p'}">
+                ${m.jk=='L'?'Laki-laki':'Perempuan'}
+            </span></td>
+            <td>
+                <div class="action-links">
+                    <a href="#" onclick="edit(${m.id})">Ubah</a>
+                    <a href="#" class="delete-btn" onclick="hapus(${m.id})">Hapus</a>
+                </div>
+            </td>
+        </tr>`;
+    });
+
+    pagination.innerHTML = "";
+    for(let i=1; i<=totalPage; i++){
+        pagination.innerHTML += `
+        <button class="${i==page?'active':''}" onclick="page=${i};render()">${i}</button>
+        `;
+    }
+}
+
+function edit(id){
+    const m = data.find(d=>d.id===id);
+    document.getElementById("nim").value = m.nim;
+    document.getElementById("nim").disabled = true; // Kunci NIM saat edit agar tidak memicu duplikasi data
+    document.getElementById("nama").value = m.nama;
+    document.getElementById("alamat").value = m.alamat;
+    document.getElementById("jk").value = m.jk;
+    document.getElementById("editId").value = id;
+
+    // Perubahan Visual Form Konten
+    document.getElementById("formTitle").innerText = "Ubah Data Mahasiswa";
+    document.getElementById("submitBtn").innerText = "Terapkan Koreksi";
+    document.getElementById("cancelBtn").style.display = "block";
+}
+
+function hapus(id){
+    if(confirm("Hapus berkas permanen data mahasiswa ini dari memori lokal?")){
+        data = data.filter(d=>d.id!==id);
+        localStorage.setItem("mahasiswa", JSON.stringify(data));
+        render();
+    }
+}
+
+function resetFormState() {
+    document.getElementById("form").reset();
+    document.getElementById("editId").value = "";
+    document.getElementById("nim").disabled = false;
+    
+    document.getElementById("formTitle").innerText = "Tambah Mahasiswa";
+    document.getElementById("submitBtn").innerText = "Simpan Data";
+    document.getElementById("cancelBtn").style.display = "none";
+    
+    ["eNim","eNama","eAlamat","eJk","ePassword"].forEach(i=>document.getElementById(i).innerText="");
+}
+
+form.onsubmit = e => {
+    e.preventDefault();
+
+    let valid = true;
+    ["eNim","eNama","eAlamat","eJk","ePassword"].forEach(i=>document.getElementById(i).innerText="");
+
+    const currentNim = document.getElementById("nim").value.trim();
+    const currentEditId = document.getElementById("editId").value;
+
+    // Validasi Kolom Kosong dari Logika Bawaan Anda
+    if(!currentNim){ eNim.innerText="NIM wajib diisi"; valid=false }
+    if(!nama.value){ eNama.innerText="Nama wajib diisi"; valid=false }
+    if(!alamat.value){ eAlamat.innerText="Alamat wajib diisi"; valid=false }
+    if(!jk.value){ eJk.innerText="Silakan pilih jenis kelamin"; valid=false }
+
+    if(!currentEditId && !password.value){
+        ePassword.innerText="Kata sandi wajib dibuat";
+        valid=false;
+    }
+
+    // Penambahan Proteksi: Cek duplikasi NIM saat mode penambahan data baru
+    if(!currentEditId && data.some(d => d.nim === currentNim)) {
+        eNim.innerText = "NIM ini sudah terdaftar!";
+        valid = false;
+    }
+
+    if(!valid) return;
+
+    if(currentEditId){
+        const m = data.find(d=>d.id == currentEditId);
+        Object.assign(m,{
+            nim: currentNim, nama: nama.value, alamat: alamat.value, jk: jk.value
+        });
+    }else{
+        data.push({
+            id: Date.now(),
+            nim: currentNim,
+            nama: nama.value,
+            alamat: alamat.value,
+            jk: jk.value,
+            password: password.value
+        });
+    }
+
+    localStorage.setItem("mahasiswa", JSON.stringify(data));
+    resetFormState();
+    render();
+};
+
+search.oninput = ()=>{ page=1; render(); };
+
+// LOGIKA SAKLAR MANAGEMENT TEMA (DENGAN PERBEDAAN IKON)
+function toggleTheme() {
+    const activeTheme = document.documentElement.getAttribute('data-theme');
+    applyTheme(activeTheme === 'dark' ? 'light' : 'dark');
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    
+    // Ambil elemen span ikon
+    const themeIcon = document.getElementById("themeIcon");
+    
+    // Kondisional penggantian ikon berdasarkan tema aktif
+    if (theme === 'dark') {
+        themeIcon.innerText = "🌙"; // Ikon Bulan untuk Mode Gelap
+    } else {
+        themeIcon.innerText = "☀️"; // Ikon Matahari untuk Mode Terang
+    }
+}
+
+// Inisialisasi Sistem Awal
+applyTheme(localStorage.getItem('theme') || 'light');
+render();
+</script>
+</body>
+</html>
